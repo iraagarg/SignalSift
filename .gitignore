@@ -1,0 +1,11 @@
+# Local Python environment
+.venv/
+__pycache__/
+*.pyc
+
+# Precomputed embeddings are large (~150MB). Regenerate with:
+#   python scripts/embeddings.py precompute --candidates data/candidates.jsonl --out data/embeddings
+data/embeddings/
+
+# HuggingFace model cache (downloaded during precompute)
+.cache/
