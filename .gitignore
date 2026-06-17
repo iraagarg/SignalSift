@@ -7,5 +7,8 @@ __pycache__/
 #   python scripts/embeddings.py precompute --candidates data/candidates.jsonl --out data/embeddings
 data/embeddings/
 
+# Generated submission output
+submission.csv
+
 # HuggingFace model cache (downloaded during precompute)
 .cache/
