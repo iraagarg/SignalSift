@@ -114,6 +114,48 @@ def compute_final_score(
     return float(score)
 
 
+def score_one_candidate(
+    candidate: dict,
+    semantic_raw: float,
+) -> dict:
+    """Score a single candidate dict; used by rank.py and the Streamlit demo."""
+    semantic_norm = normalize_semantic_similarity(semantic_raw)
+    feats = compute_features(candidate)
+    behavioral = compute_behavioral_multiplier(candidate)
+    honeypot = check_honeypot(candidate).to_dict()
+
+    final = compute_final_score(
+        feats,
+        behavioral,
+        honeypot["honeypot_demotion_multiplier"],
+        semantic_norm,
+    )
+
+    return {
+        "candidate_id": candidate["candidate_id"],
+        "score": final,
+        "candidate": candidate,
+        "feats": feats,
+        "behavioral": behavioral,
+        "honeypot": honeypot,
+        "semantic_raw": semantic_raw,
+        "semantic_norm": semantic_norm,
+    }
+
+
+def rank_candidate_list(
+    candidates: list[dict],
+    semantic_raw_by_id: dict[str, float],
+    top_n: int = 100,
+) -> list[dict]:
+    """Score a list of candidates and return top_n sorted results."""
+    scored = [
+        score_one_candidate(c, semantic_raw_by_id.get(c["candidate_id"], 0.0)) for c in candidates
+    ]
+    scored.sort(key=lambda x: (-x["score"], x["candidate_id"]))
+    return scored[: min(top_n, len(scored))]
+
+
 def stream_candidates(path: Path):
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
@@ -155,30 +197,7 @@ def rank_candidates(
         else:
             semantic_raw = cosine_similarity_to_job(cand_embeddings[row], job_embedding)
 
-        semantic_norm = normalize_semantic_similarity(semantic_raw)
-        feats = compute_features(candidate)
-        behavioral = compute_behavioral_multiplier(candidate)
-        honeypot = check_honeypot(candidate).to_dict()
-
-        final = compute_final_score(
-            feats,
-            behavioral,
-            honeypot["honeypot_demotion_multiplier"],
-            semantic_norm,
-        )
-
-        scored.append(
-            {
-                "candidate_id": cid,
-                "score": final,
-                "candidate": candidate,
-                "feats": feats,
-                "behavioral": behavioral,
-                "honeypot": honeypot,
-                "semantic_raw": semantic_raw,
-                "semantic_norm": semantic_norm,
-            }
-        )
+        scored.append(score_one_candidate(candidate, semantic_raw))
 
         if i % 25000 == 0:
             print(f"  {i:,} scored ...")
