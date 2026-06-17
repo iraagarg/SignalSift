@@ -1,0 +1,56 @@
+# Redrob Hackathon — Submission Metadata
+# Fill in team identity / contact fields before portal upload.
+
+team_name: "your-team-name-here"
+
+primary_contact:
+  name: "Full Name"
+  email: "primary@example.com"
+  phone: "+91-XXXXXXXXXX"
+
+team_members:
+  - name: "Full Name"
+    email: "primary@example.com"
+    role: "Team Lead"
+
+github_repo: "https://github.com/YOUR_USERNAME/YOUR_REPO"
+
+sandbox_link: "https://share.streamlit.io/YOUR_USERNAME/redrob-ranker/main/app.py"
+
+reproduce_command: "python scripts/embeddings.py precompute --candidates data/candidates.jsonl --out data/embeddings && python scripts/rank.py --candidates data/candidates.jsonl --out submission.csv"
+
+compute:
+  platform: "MacBook (darwin)"
+  cpu_cores: 8
+  ram_gb: 16
+  python_version: "3.9"
+  os: "macOS 14.6"
+  uses_gpu_for_inference: false
+  has_network_during_ranking: false
+  pre_computation_required: true
+  pre_computation_time_minutes: 20
+
+ai_tools_used:
+  - "Cursor"
+  - "Claude"
+
+ai_usage_summary: |
+  Used Cursor/Claude for architecture discussion, code review, and implementation
+  scaffolding. All scoring logic was reviewed and tested locally. Candidate data
+  was not sent to external APIs during ranking (CPU-only local embeddings).
+
+methodology_summary: |
+  Layered ranker: (1) title_relevance as primary anti-keyword-stuffing gate,
+  (2) production_ml_experience from career_history text not skill tags,
+  (3) low-weight semantic similarity via precomputed MiniLM embeddings,
+  (4) experience/location/notice logistics, (5) multiplicative penalties for
+  consulting-only careers, JD disqualifiers, and structural honeypots,
+  (6) narrow-band behavioral engagement modifier. Precompute embeddings offline;
+  ranking loads .npy artifacts only (~93s for 100K, ~2.2GB RAM, CPU, no network).
+
+declarations:
+  read_submission_spec: true
+  code_is_original_work: true
+  no_collusion: true
+  honeypot_check_done: true
+  reproduction_tested: true
