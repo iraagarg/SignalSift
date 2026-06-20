@@ -66,8 +66,15 @@ QUALIFICATION_WEIGHTS: dict[str, float] = {
 SEMANTIC_SIM_FLOOR = 0.35
 SEMANTIC_SIM_CEIL = 0.70
 
-DEFAULT_EMBEDDINGS_DIR = Path(__file__).resolve().parent.parent / "data" / "embeddings"
+# When current_title is deny-tier (HR, Civil Engineer, etc.), crush the final score.
+# Career-history MAX title can still be deny; semantic similarity must not rescue
+# keyword-stuffed summaries that embed well against the JD (the dataset trap).
+DENY_CURRENT_TITLE_MULTIPLIER = 0.10
+# Cap production_ml from career text for deny-tier currents — generic "production"
+# language in unrelated roles should not partially compensate.
+DENY_CURRENT_TITLE_PROD_ML_CAP = 0.10
 
+DEFAULT_EMBEDDINGS_DIR = Path(__file__).resolve().parent.parent / "data" / "embeddings"
 
 def normalize_semantic_similarity(raw_cosine: float) -> float:
     """Map raw cosine similarity to [0, 1] using dataset-observed range."""
@@ -102,6 +109,15 @@ def compute_final_score(
         "notice_period_fit": feats["notice_period_fit"],
     }
 
+    # Deny-tier CURRENT title (features.py title_current_tier == "deny"):
+    # Block semantic + inflated career-text signals — same rule for app.py and rank.py.
+    if feats.get("title_current_tier") == "deny":
+        components["semantic_similarity"] = 0.0
+        components["production_ml_experience"] = min(
+            components["production_ml_experience"],
+            DENY_CURRENT_TITLE_PROD_ML_CAP,
+        )
+
     base = sum(components[k] * QUALIFICATION_WEIGHTS[k] for k in QUALIFICATION_WEIGHTS)
     base += feats.get("education_tier_bonus", 0.0)
 
@@ -110,6 +126,9 @@ def compute_final_score(
     score *= feats.get("disqualifier_penalty", 1.0)
     score *= honeypot_demotion
     score *= behavioral.get("behavioral_multiplier", 1.0)
+
+    if feats.get("title_current_tier") == "deny":
+        score *= DENY_CURRENT_TITLE_MULTIPLIER
 
     return float(score)
 

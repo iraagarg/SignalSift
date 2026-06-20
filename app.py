@@ -31,7 +31,7 @@ from embeddings import (  # noqa: E402
     encode_texts,
     load_job_description_text,
 )
-from rank import rank_candidate_list, write_submission_csv  # noqa: E402
+from rank import rank_candidate_list, write_submission_csv  # noqa: E402 — same score_one_candidate / compute_final_score as CLI
 from reasoning import generate_reasoning  # noqa: E402
 
 SAMPLE_PATH = REPO_ROOT / "data" / "sample_candidates.json"
@@ -93,6 +93,8 @@ def rows_to_display_table(ranked: list[dict]) -> pd.DataFrame:
                 "years_of_experience": profile.get("years_of_experience"),
                 "location": profile.get("location"),
                 "title_relevance": row["feats"].get("title_relevance"),
+                "title_current_tier": row["feats"].get("title_current_tier"),
+                "company_type_penalty": row["feats"].get("company_type_penalty"),
                 "production_ml": row["feats"].get("production_ml_experience"),
                 "honeypot": row["honeypot"].get("is_likely_honeypot"),
                 "reasoning": generate_reasoning(

@@ -16,3 +16,6 @@ data/candidates.jsonl
 data/embeddings/
 .venv/
 submission.csv
+.DS_Store
+data/.DS_Store
+iragarg07_2175.csv
