@@ -14,34 +14,90 @@ from __future__ import annotations
 from typing import Any
 
 
+# Maps phrases found in career_history descriptions to clean paraphrases.
+# We never embed raw truncated text — mid-word cuts read as bugs in manual review.
+_CAREER_THEME_PARAPHRASES: list[tuple[tuple[str, ...], str]] = [
+    (("learning to rank", "learning-to-rank", " ltr"), "worked on learning-to-rank models in production"),
+    (("recommendation system", "recommender system", "recommender"), "shipped recommendation systems to real users"),
+    (("embedding-based", "embeddings-based", "embedding based"), "migrated search to embedding-based retrieval in production"),
+    (("semantic search", "vector search", "hybrid search"), "built semantic or hybrid search infrastructure"),
+    (("information retrieval", "retrieval system", "retrieval layer"), "owned retrieval and search-quality work"),
+    (("re-ranking", "reranking", "re ranking"), "designed re-ranking layers for user-facing discovery"),
+    (("ranking model", "ranking system", "ranking layer", "ranking feed"), "developed production ranking systems"),
+    (("a/b test", "ab test", "offline-online", "offline/online"), "ran A/B tests and offline-to-online ranking evaluation"),
+    (("ndcg", "mrr", " mean average precision"), "designed ranking evaluation with standard IR metrics"),
+    (("collaborative filtering",), "built collaborative filtering with content-based ranking features"),
+    (("vector database", "vector db", "pinecone", "faiss", "qdrant"), "worked with vector search infrastructure"),
+    (("embedding", "sentence-transformer", "sentence transformer"), "built embedding pipelines for retrieval"),
+    (("search engine", "search product", " e-commerce search"), "owned search relevance and ranking for a product"),
+    (("ranking",), "contributed to ranking and matching systems"),
+    (("retrieval",), "worked on retrieval systems deployed to users"),
+    (("search",), "worked on search and discovery features"),
+]
+
+
+def _paraphrase_career_entry(entry: dict) -> str | None:
+    """
+    Return a complete sentence clause about one career stint — no raw snippets.
+
+    Uses keyword detection only to choose a paraphrase template; title and
+    company always come from the actual profile fields.
+    """
+    title = entry.get("title", "").strip()
+    company = entry.get("company", "").strip()
+    desc_lower = entry.get("description", "").lower()
+
+    if not title and not company:
+        return None
+
+    for keywords, paraphrase in _CAREER_THEME_PARAPHRASES:
+        if any(kw in desc_lower for kw in keywords):
+            if title and company:
+                return f"{title} at {company}, where they {paraphrase}"
+            if title:
+                return f"{title} role where they {paraphrase}"
+            return f"Prior role at {company} where they {paraphrase}"
+
+    if title and company:
+        return f"{title} at {company} with hands-on product engineering experience"
+    if title:
+        return f"{title} with relevant engineering experience"
+    return f"Experience at {company}"
+
+
 def _pick_career_detail(candidate: dict) -> str | None:
-    """Extract one concrete phrase from career_history for reasoning."""
-    for entry in candidate.get("career_history", []):
-        desc = entry.get("description", "")
-        title = entry.get("title", "")
-        company = entry.get("company", "")
-        # Prefer sentences mentioning JD-relevant work.
-        for keyword in (
-            "ranking",
-            "retrieval",
-            "recommendation",
-            "embedding",
-            "search",
-            "vector",
-            "A/B test",
-            "NDCG",
-        ):
-            if keyword.lower() in desc.lower():
-                # Short snippet around the keyword for natural phrasing.
-                idx = desc.lower().find(keyword.lower())
-                start = max(0, idx - 40)
-                snippet = desc[start : idx + len(keyword) + 30].strip()
-                if snippet.endswith(","):
-                    snippet = snippet[:-1]
-                return f"{title} at {company} ({snippet}…)"
-        if company and title:
-            return f"{title} at {company}"
-    return None
+    """Pick the best career-history entry and return a clean paraphrase (no raw text)."""
+    history = candidate.get("career_history", [])
+    if not history:
+        return None
+
+    # Prefer the stint whose description mentions the most JD-relevant themes.
+    best_entry = None
+    best_score = -1
+    jd_keywords = (
+        "ranking",
+        "retrieval",
+        "recommendation",
+        "embedding",
+        "search",
+        "vector",
+        "a/b test",
+        "ndcg",
+        "collaborative filtering",
+    )
+    for entry in history:
+        desc_lower = entry.get("description", "").lower()
+        score = sum(1 for kw in jd_keywords if kw in desc_lower)
+        if score > best_score:
+            best_score = score
+            best_entry = entry
+
+    if best_entry and best_score > 0:
+        return _paraphrase_career_entry(best_entry)
+
+    # Fall back to current or first role with a generic but grammatical clause.
+    current = next((e for e in history if e.get("is_current")), history[0])
+    return _paraphrase_career_entry(current)
 
 
 def _pick_skill_name(candidate: dict) -> str | None:
