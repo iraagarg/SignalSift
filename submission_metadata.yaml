@@ -46,7 +46,7 @@ methodology_summary: |
   (4) experience/location/notice logistics, (5) multiplicative penalties for
   consulting-only careers, JD disqualifiers, and structural honeypots,
   (6) narrow-band behavioral engagement modifier. Precompute embeddings offline;
-  ranking loads .npy artifacts only (~93s for 100K, ~2.2GB RAM, CPU, no network).
+  ranking loads .npy artifacts only (~164s for 100K, ~2.2GB RAM, CPU, no network).
 
 declarations:
   read_submission_spec: true
