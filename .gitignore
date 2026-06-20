@@ -12,3 +12,7 @@ submission.csv
 
 # HuggingFace model cache (downloaded during precompute)
 .cache/
+data/candidates.jsonl
+data/embeddings/
+.venv/
+submission.csv
