@@ -64,7 +64,7 @@ candidates.jsonl
 
 ### Compute profile (100K ranking step)
 
-- **Wall-clock:** ~93 seconds
+- **Wall-clock:** ~164 seconds
 - **Peak RAM:** ~2.2 GB
 - **CPU only, no network** during `rank.py` (loads `.npy` artifacts only)
 
